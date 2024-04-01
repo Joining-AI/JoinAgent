@@ -1,0 +1,174 @@
+{
+    "LLM_API\\glm.py": {
+        "GLMService": {
+            "type": "ClassDef",
+            "name": "GLMService",
+            "md_content": "**GLMService**: 这个类的功能是与GLM模型进行交互的服务类。\n\n在构造函数`__init__`中，我们首先加载当前目录的.env文件，并初始化一些属性。`version`参数用于指定GLM模型的版本，默认为\"glm-3-turbo\"。`total_tokens_used`属性用于保存总共使用的token数量。`api_key`属性从环境变量中导入GLM_API的值，用作API密钥。`client`属性是一个ZhipuAI的实例，用于创建与GLM模型的连接。\n\n`ask_once`方法用于向GLM模型发送请求并获取回答。该方法接受两个参数：`query`表示用户的查询字符串，`url`表示图像的URL（可选）。根据`version`的值，分别调用不同版本的GLM模型进行请求。\n\n如果`version`为\"glm-3-turbo\"或\"glm-4\"，则使用`client.chat.completions.create`方法发送请求。请求的内容是一个包含用户角色和查询内容的字典。如果响应中存在回答，则返回回答字符串；否则返回\"无法获取回答。\"。同时，如果响应中存在`usage`属性，则更新`total_tokens_used`属性的值。\n\n如果`version`不是\"glm-3-turbo\"或\"glm-4\"，则需要提供图像的URL。请求的内容是一个包含用户角色、查询内容和图像URL的字典。其他操作与上述相同。\n\n**注意**：使用该代码时需要注意以下几点：\n- 需要提前在.env文件中设置GLM_API的值作为API密钥。\n- 需要确保已安装`zhipuai`库，并导入`ZhipuAI`类。\n\n**输出示例**：\n- 示例1：\n  ```\n  query = \"你好\"\n  glm_service = GLMService()\n  answer = glm_service.ask_once(query)\n  print(answer)\n  输出： \"你好，我能帮助你吗？\"\n  ```\n- 示例2：\n  ```\n  query = \"这是什么东西？\"\n  url = \"https://example.com/image.jpg\"\n  glm_service = GLMService()\n  answer, error = glm_service.ask_once(query, url)\n  if error:\n      print(error)\n  else:\n      print(answer)\n  输出： \"这是一只猫。\"",
+            "code_start_line": 5,
+            "code_end_line": 73,
+            "parent": null,
+            "have_return": true,
+            "code_content": "class GLMService:\n    def __init__(self, version=\"glm-3-turbo\"):\n        # 加载当前目录的.env文件\n        load_dotenv()\n        self.version=version\n        self.total_tokens_used = 0  # 用于保存总共使用的token数量\n        # 从环境变量中导入API密钥\n        self.api_key = os.getenv('GLM_API', None)\n        self.client = ZhipuAI(api_key=self.api_key)  # 创建客户端实例\n\n    def ask_once(self, query, url=None):\n        \"\"\"\n        使用zhipuai库向GLM-3-Turbo模型发送请求并获取回答\n        :param query: 用户的查询字符串\n        :return: 模型的回答字符串\n        \"\"\"\n        if self.version in ['glm-3-turbo', 'glm-4']:\n            response = self.client.chat.completions.create(\n                model=self.version,\n                messages=[\n                    {\"role\": \"user\", \"content\": query}\n                ]\n            )\n            # 检查响应并提取信息\n            if response.choices:\n                # 正确地访问响应对象的属性\n                message = response.choices[0].message.content\n                # 更新token使用量\n                if hasattr(response, 'usage'):\n                    self.total_tokens_used += response.usage.total_tokens\n                return message\n            else:\n                return \"无法获取回答。\"\n            \n        else:\n            if url is None:  # 检查是否提供了URL\n                return None, \"请提供图像URL\"\n            response = self.client.chat.completions.create(\n                model=self.version,  # 填写需要调用的模型名称\n                messages=[\n                    {\n                        \"role\": \"user\",\n                        \"content\": [\n                            {\n                                \"type\": \"text\",\n                                \"text\": query\n                            },\n                            {\n                                \"type\": \"image_url\",\n                                \"image_url\": {\n                                    \"url\": url\n                                }\n                            }\n                        ]\n                    }\n                ]\n            )\n\n            \n            # 检查响应并提取信息\n            if response.choices:\n                # 正确地访问响应对象的属性\n                message = response.choices[0].message.content\n                # 更新token使用量\n                if hasattr(response, 'usage'):\n                    self.total_tokens_used += response.usage.total_tokens\n                return message, None\n            else:\n                return None, \"无法获取回答。\"",
+            "name_column": 6
+        },
+        "__init__": {
+            "type": "FunctionDef",
+            "name": "__init__",
+            "md_content": "**__init__**: 这个函数的功能是初始化一个对象。\n\n这个函数接受一个可选参数version，默认值为\"glm-3-turbo\"。在函数体内，首先加载当前目录的.env文件。然后，将传入的version赋值给对象的version属性。接下来，将total_tokens_used属性初始化为0，用于保存总共使用的token数量。然后，从环境变量中导入名为'GLM_API'的API密钥，并将其赋值给对象的api_key属性。最后，创建一个ZhipuAI的实例，并将api_key作为参数传入，将该实例赋值给对象的client属性。\n\n**注意**: 使用这段代码时需要注意以下几点：\n- 需要确保当前目录下存在.env文件，否则会导致加载失败。\n- 如果不传入version参数，则默认使用\"glm-3-turbo\"作为version。\n- 需要在环境变量中设置名为'GLM_API'的API密钥，否则会导致api_key属性为None。\n- 需要确保ZhipuAI类已经导入，否则会导致创建客户端实例失败。",
+            "code_start_line": 6,
+            "code_end_line": 13,
+            "parent": "GLMService",
+            "have_return": false,
+            "code_content": "    def __init__(self, version=\"glm-3-turbo\"):\n        # 加载当前目录的.env文件\n        load_dotenv()\n        self.version=version\n        self.total_tokens_used = 0  # 用于保存总共使用的token数量\n        # 从环境变量中导入API密钥\n        self.api_key = os.getenv('GLM_API', None)\n        self.client = ZhipuAI(api_key=self.api_key)  # 创建客户端实例\n",
+            "name_column": 8
+        },
+        "ask_once": {
+            "type": "FunctionDef",
+            "name": "ask_once",
+            "md_content": "**ask_once**: 这个函数的功能是使用zhipuai库向GLM-3-Turbo模型发送请求并获取回答。\n\n该函数接受两个参数：query和url。query是用户的查询字符串，url是图像的URL。如果GLM的版本是'glm-3-turbo'或'glm-4'，则只需要提供query参数。如果GLM的版本不是这两个，还需要提供url参数。\n\n函数首先检查GLM的版本是否是'glm-3-turbo'或'glm-4'，如果是，则使用zhipuai库的chat.completions.create方法发送请求，并将query作为用户的消息发送给模型。然后，检查响应对象的choices属性，如果存在回答，则提取第一个回答的内容，并更新token使用量。最后，返回模型的回答字符串。\n\n如果GLM的版本不是'glm-3-turbo'或'glm-4'，则需要检查是否提供了url参数。如果没有提供url参数，则返回None和\"请提供图像URL\"。如果提供了url参数，则使用zhipuai库的chat.completions.create方法发送请求，并将query和url作为用户的消息发送给模型。然后，检查响应对象的choices属性，如果存在回答，则提取第一个回答的内容，并更新token使用量。最后，返回模型的回答字符串和None。\n\n**注意**: \n- 请确保已经安装了zhipuai库，并且已经正确配置了相关的API密钥和模型版本。\n- 如果GLM的版本不是'glm-3-turbo'或'glm-4'，请确保提供了正确的图像URL。\n\n**输出示例**:\n- 示例1:\n  输入: query=\"你好\"\n  输出: \"你好，我可以帮助你吗？\"\n- 示例2:\n  输入: query=\"这是什么东西\"，url=\"https://example.com/image.jpg\"\n  输出: \"这是一张图片，它是一个红色的苹果。\"",
+            "code_start_line": 15,
+            "code_end_line": 73,
+            "parent": "GLMService",
+            "have_return": true,
+            "code_content": "    def ask_once(self, query, url=None):\n        \"\"\"\n        使用zhipuai库向GLM-3-Turbo模型发送请求并获取回答\n        :param query: 用户的查询字符串\n        :return: 模型的回答字符串\n        \"\"\"\n        if self.version in ['glm-3-turbo', 'glm-4']:\n            response = self.client.chat.completions.create(\n                model=self.version,\n                messages=[\n                    {\"role\": \"user\", \"content\": query}\n                ]\n            )\n            # 检查响应并提取信息\n            if response.choices:\n                # 正确地访问响应对象的属性\n                message = response.choices[0].message.content\n                # 更新token使用量\n                if hasattr(response, 'usage'):\n                    self.total_tokens_used += response.usage.total_tokens\n                return message\n            else:\n                return \"无法获取回答。\"\n            \n        else:\n            if url is None:  # 检查是否提供了URL\n                return None, \"请提供图像URL\"\n            response = self.client.chat.completions.create(\n                model=self.version,  # 填写需要调用的模型名称\n                messages=[\n                    {\n                        \"role\": \"user\",\n                        \"content\": [\n                            {\n                                \"type\": \"text\",\n                                \"text\": query\n                            },\n                            {\n                                \"type\": \"image_url\",\n                                \"image_url\": {\n                                    \"url\": url\n                                }\n                            }\n                        ]\n                    }\n                ]\n            )\n\n            \n            # 检查响应并提取信息\n            if response.choices:\n                # 正确地访问响应对象的属性\n                message = response.choices[0].message.content\n                # 更新token使用量\n                if hasattr(response, 'usage'):\n                    self.total_tokens_used += response.usage.total_tokens\n                return message, None\n            else:\n                return None, \"无法获取回答。\"",
+            "name_column": 8
+        }
+    },
+    "LLM_API\\moonshot.py": {
+        "KimiService": {
+            "type": "ClassDef",
+            "name": "KimiService",
+            "md_content": "**KimiService**: 这个类的功能是提供一个与Kimi聊天的服务。\n\n这个类有一个构造函数`__init__`，它接受一个可选的参数`version`，默认值为'8k'。在构造函数中，首先加载当前目录的.env文件。然后，将传入的`version`与'moonshot-v1-'拼接起来，赋值给实例变量`self.version`。接下来，初始化实例变量`self.client`为None，表示OpenAI客户端尚未初始化。初始化实例变量`self.initialized`为False，表示服务尚未初始化。初始化实例变量`self.total_tokens_used`为0，用于保存总共使用的token数量。从环境变量中导入API密钥，并将基础URL设为'https://api.moonshot.cn/v1'。最后，调用`init_service`方法初始化服务。\n\n这个类还有一个`init_service`方法，它接受两个参数`api_key`和`base_url`，并返回一个布尔值。在方法内部，通过传入的`api_key`和`base_url`创建一个OpenAI客户端，并将其赋值给实例变量`self.client`。将实例变量`self.initialized`设为True，表示服务已经初始化完成。最后，返回True表示初始化成功。\n\n这个类还有一个`ask_once`方法，它接受一个参数`prompt`，并返回一个字符串。在方法内部，首先检查服务是否已经初始化，如果未初始化，则抛出一个`ValueError`异常，提示用户先调用`init_service`方法初始化服务。然后，检查OpenAI客户端是否正确初始化，如果未正确初始化，则抛出一个`ValueError`异常，提示用户检查初始化过程。接下来，调用OpenAI客户端的`chat.completions.create`方法，传入模型版本和用户输入的对话内容，获取聊天的回复。如果成功获取到回复，则更新实例变量`self.total_tokens_used`，累加本次使用的token数量。最后，返回回复中的内容。\n\n**注意**：在使用这个类之前，需要先调用`init_service`方法初始化服务。\n\n**输出示例**：\n```\n服务未初始化，请先调用 init_service 方法初始化服务。\nOpenAI 客户端未正确初始化，请检查初始化过程。\n本次使用的token数量： 50\n\"你好，有什么可以帮助你的吗？\"\n```",
+            "code_start_line": 5,
+            "code_end_line": 45,
+            "parent": null,
+            "have_return": true,
+            "code_content": "class KimiService:\n    def __init__(self, version='8k'):\n        # 加载当前目录的.env文件\n        load_dotenv()\n\n        self.version='moonshot-v1-'+version\n        self.client = None\n        self.initialized = False\n        self.total_tokens_used = 0  # 添加一个成员变量用于保存总共使用的token数量\n        # 从环境变量中导入API密钥和基础URL\n        api_key = os.getenv('KIMI_API', None)\n        base_url ='https://api.moonshot.cn/v1'\n        self.init_service(api_key, base_url)\n\n    def init_service(self, api_key: str, base_url: str) -> bool:\n        self.client = OpenAI(\n            api_key=api_key,\n            base_url=base_url\n        )\n        self.initialized = True\n        return True\n\n    def ask_once(self, prompt: str) -> str:\n        if not self.initialized:\n            raise ValueError(\"服务未初始化，请先调用 init_service 方法初始化服务。\")\n        \n        if not self.client:\n            raise ValueError(\"OpenAI 客户端未正确初始化，请检查初始化过程。\")\n        \n        response = self.client.chat.completions.create(\n            model=self.version,\n            messages=[{\"role\": \"user\", \"content\": prompt}]\n        )\n\n        if response:\n            total_tokens = response.usage.total_tokens\n            self.total_tokens_used += total_tokens  # 更新总共使用的token数量\n            print(\"本次使用的token数量：\", total_tokens)\n            return response.choices[0].message.content\n        else:\n            return \"\"\n",
+            "name_column": 6
+        },
+        "__init__": {
+            "type": "FunctionDef",
+            "name": "__init__",
+            "md_content": "**__init__**: 这个函数的功能是初始化一个对象。\n\n这个函数接受一个参数version，默认值为'8k'。在函数内部，首先加载当前目录的.env文件，然后将version与'moonshot-v1-'拼接起来赋值给self.version。接下来，将self.client和self.initialized初始化为None和False。然后，将self.total_tokens_used初始化为0，用于保存总共使用的token数量。最后，从环境变量中导入API密钥并将其赋值给api_key，将基础URL赋值为'https://api.moonshot.cn/v1'，并调用self.init_service函数进行初始化。\n\n**注意**: 使用这段代码时需要注意以下几点：\n- 需要确保当前目录下存在.env文件，否则会导致加载失败。\n- version参数可以自定义，但建议使用默认值'8k'。\n- 需要在环境变量中设置KIMI_API的值，否则会导致api_key为None。\n- 基础URL默认为'https://api.moonshot.cn/v1'，如果需要使用其他URL，请在调用函数前修改base_url的值。",
+            "code_start_line": 6,
+            "code_end_line": 17,
+            "parent": "KimiService",
+            "have_return": false,
+            "code_content": "    def __init__(self, version='8k'):\n        # 加载当前目录的.env文件\n        load_dotenv()\n\n        self.version='moonshot-v1-'+version\n        self.client = None\n        self.initialized = False\n        self.total_tokens_used = 0  # 添加一个成员变量用于保存总共使用的token数量\n        # 从环境变量中导入API密钥和基础URL\n        api_key = os.getenv('KIMI_API', None)\n        base_url ='https://api.moonshot.cn/v1'\n        self.init_service(api_key, base_url)\n",
+            "name_column": 8
+        },
+        "init_service": {
+            "type": "FunctionDef",
+            "name": "init_service",
+            "md_content": "**init_service**: 此函数的功能是初始化服务。\n\n此函数接受两个参数：api_key和base_url，分别表示API密钥和基础URL。通过调用OpenAI类的构造函数，将api_key和base_url作为参数传递给client对象进行初始化。然后将initialized变量设置为True，表示服务已成功初始化。最后，返回True表示初始化成功。\n\n在moonshot.py文件中的__init__函数中，首先加载当前目录的.env文件。然后设置version变量为'moonshot-v1-'+version，其中version是传入__init__函数的参数。接着初始化client和initialized变量，并将total_tokens_used变量初始化为0，用于保存总共使用的token数量。从环境变量中获取api_key，并将base_url设置为'https://api.moonshot.cn/v1'。最后，调用init_service函数，传入api_key和base_url进行服务初始化。\n\n**注意**：使用此代码的注意事项是需要确保在调用init_service函数之前已经正确设置了api_key和base_url。\n\n**输出示例**：True",
+            "code_start_line": 19,
+            "code_end_line": 25,
+            "parent": "KimiService",
+            "have_return": true,
+            "code_content": "    def init_service(self, api_key: str, base_url: str) -> bool:\n        self.client = OpenAI(\n            api_key=api_key,\n            base_url=base_url\n        )\n        self.initialized = True\n        return True\n",
+            "name_column": 8
+        },
+        "ask_once": {
+            "type": "FunctionDef",
+            "name": "ask_once",
+            "md_content": "**ask_once**: 这个函数的功能是向OpenAI的聊天模型发送一个问题，并返回模型生成的回答。\n\n该函数接受一个字符串参数prompt，表示用户的问题或者对话内容。在调用该函数之前，需要先调用init_service方法初始化服务，并确保OpenAI客户端已正确初始化。\n\n函数首先会检查服务是否已经初始化，如果未初始化，则会抛出一个ValueError异常，提示需要先调用init_service方法初始化服务。\n\n接下来，函数会检查OpenAI客户端是否已正确初始化，如果未正确初始化，则会抛出一个ValueError异常，提示需要检查初始化过程。\n\n然后，函数会使用OpenAI客户端的chat.completions.create方法发送一个请求给聊天模型，传入模型版本和用户的问题或对话内容。\n\n如果成功获取到回复，函数会获取回复中的总token数量，并更新总共使用的token数量。然后，函数会返回模型生成的回答。\n\n如果未获取到回复，则函数会返回一个空字符串。\n\n**注意**: 使用该代码时需要注意以下几点：\n- 在调用ask_once函数之前，需要先调用init_service方法初始化服务，并确保OpenAI客户端已正确初始化。\n- 该函数依赖于OpenAI的聊天模型，需要确保模型版本的正确性和可用性。\n\n**输出示例**:\n本次使用的token数量： 50\n\"这是模型生成的回答\"",
+            "code_start_line": 27,
+            "code_end_line": 45,
+            "parent": "KimiService",
+            "have_return": true,
+            "code_content": "    def ask_once(self, prompt: str) -> str:\n        if not self.initialized:\n            raise ValueError(\"服务未初始化，请先调用 init_service 方法初始化服务。\")\n        \n        if not self.client:\n            raise ValueError(\"OpenAI 客户端未正确初始化，请检查初始化过程。\")\n        \n        response = self.client.chat.completions.create(\n            model=self.version,\n            messages=[{\"role\": \"user\", \"content\": prompt}]\n        )\n\n        if response:\n            total_tokens = response.usage.total_tokens\n            self.total_tokens_used += total_tokens  # 更新总共使用的token数量\n            print(\"本次使用的token数量：\", total_tokens)\n            return response.choices[0].message.content\n        else:\n            return \"\"\n",
+            "name_column": 8
+        }
+    },
+    "LLM_API\\sense_time.py": {
+        "SenseService": {
+            "type": "ClassDef",
+            "name": "SenseService",
+            "md_content": "**SenseService**: 这个类的功能是提供与SenseTime API进行交互的服务。\n\n该类的构造函数`__init__`接受两个参数：`version`和`refresh_interval`。`version`表示使用的SenseChat版本，默认为'SenseChat'。`refresh_interval`表示刷新token的时间间隔，默认为1700秒。在构造函数中，会初始化一些属性，包括`version`、`base_url`、`ak`、`sk`、`authorization`、`refresh_interval`、`timer`、`lock`和`total_tokens_used`。\n\n**generate_jwt_token**: 这个方法用于生成JWT token。它首先定义了headers和payload，然后使用`jwt.encode`方法生成token并返回。\n\n**refresh_token**: 这个方法用于刷新token。它使用`self.lock`来确保线程安全，生成新的authorization并更新`self.authorization`。如果已经存在定时器`self.timer`，则取消之前的定时器。然后创建一个新的定时器，定时调用`self.refresh_token`方法。\n\n**send_get_request**: 这个方法用于发送GET请求。它首先定义了url和headers，然后使用`requests.get`方法发送请求并返回响应的json数据。\n\n**ask_once**: 这个方法用于向SenseTime API发送一次对话请求。它首先定义了url、headers和payload。然后使用`requests.post`方法发送请求并返回响应的json数据。如果响应状态码为200，表示请求成功，会返回响应中的message字段的值。如果响应状态码为401，表示认证失败，会尝试重新刷新token并重新发送请求。如果重试次数超过3次，则返回认证失败的错误信息。如果响应状态码不是200或401，则返回响应的状态码。\n\n**embed**: 这个方法用于获取文本的embedding。它首先定义了url、headers和payload。然后使用`requests.post`方法发送请求并返回响应的json数据。如果响应状态码为200，表示请求成功，会返回响应中的embedding字段的值。如果响应状态码为401，表示认证失败，会尝试重新刷新token并重新发送请求。如果重试次数超过3次，则返回认证失败的错误信息。如果响应状态码不是200或401，则返回包含错误信息的字典。\n\n**__del__**: 这个方法在对象被销毁时调用。它使用`self.lock`来确保线程安全，如果存在定时器`self.timer`，则取消定时器。\n\n**注意**: 在使用该类之前，需要先设置环境变量`SENSETIME_AK`和`SENSETIME_SK`，分别用于获取AK和SK。\n\n**输出示例**:\n```\n{\n    \"message\": \"你好，有什么可以帮助你的吗？\"\n}\n```",
+            "code_start_line": 9,
+            "code_end_line": 117,
+            "parent": null,
+            "have_return": true,
+            "code_content": "class SenseService:\n    def __init__(self, version='SenseChat',refresh_interval=1700):\n        self.version=version\n        self.base_url = \"https://api.sensenova.cn/v1/llm\"\n        self.ak = os.getenv(\"SENSETIME_AK\", None)  # 从环境变量获取AK\n        self.sk = os.getenv(\"SENSETIME_SK\", None)   # 从环境变量获取SK\n        self.authorization = None\n        self.refresh_interval = refresh_interval\n        self.timer = None\n        self.lock = threading.Lock()\n        self.refresh_token()\n        self.total_tokens_used = 0 \n\n    def generate_jwt_token(self):\n        headers = {\"alg\": \"HS256\", \"typ\": \"JWT\"}\n        payload = {\"iss\": self.ak, \"exp\": int(time.time()) + 1800, \"nbf\": int(time.time()) - 5}\n        token = jwt.encode(payload, self.sk, algorithm=\"HS256\", headers=headers)\n        return token\n\n    def refresh_token(self):\n        with self.lock:\n            self.authorization = self.generate_jwt_token()\n            if self.timer:\n                self.timer.cancel()\n            self.timer = threading.Timer(self.refresh_interval, self.refresh_token)\n            self.timer.start()\n\n    def send_get_request(self):\n        url = \"https://api.sensenova.cn/v1/llm/models\"\n        headers = {\n            \"Authorization\": \"Bearer \" +self.authorization,\n            \"Content-Type\": \"application/json\"\n        }\n        \n        response = requests.get(url, headers=headers)\n        return print(response.json())\n\n    def ask_once(self,messages=None, know_ids=None, max_new_tokens=None, n=1, repetition_penalty=1.05, stream=False, temperature=0.8, top_p=0.7, user=None, knowledge_config=None, plugins=None, retry_count=0):\n        url = self.base_url+'/chat-completions'\n        headers = {\"Content-Type\": \"application/json\", \"Authorization\": \"Bearer \"+self.authorization}\n        payload = {\n            \"max_new_tokens\": max_new_tokens if max_new_tokens is not None else 1024,\n            \"messages\":  [{\n                \"content\": messages,\n                \"role\": \"user\"\n            }],\n            \"model\": self.version,\n            \"n\": n,\n            \"repetition_penalty\": repetition_penalty,\n            \"stream\": stream,\n            \"temperature\": temperature,\n            \"top_p\": top_p,\n            'knowledge_config':{},\n            'plugins':{}\n        }\n\n        response = requests.post(url, headers=headers, data=json.dumps(payload))\n        response_data = response.json()\n\n        # 提取'message'字段的值\n        total_tokens = response_data['data']['usage']['total_tokens']\n        self.total_tokens_used += total_tokens  # 更新总共使用的token数量\n        message = response_data['data']['choices'][0]['message']\n        if response.status_code == 200:\n            print(\"本次使用的token数量：\", total_tokens)\n            return message\n        elif response.status_code == 401:\n            if retry_count < 3:  # 允许最多重试3次\n                self.refresh_token()  # 刷新token\n                return self.send_request(know_ids, max_new_tokens, messages, model, n, repetition_penalty, stream, temperature, top_p, user, knowledge_config, plugins, retry_count + 1)\n            else:\n                # 超过重试次数，可以返回错误信息或抛出异常\n                return {\"error\": \"Authentication failed after 3 retries.\"}\n        else:\n            return response.status_code\n\n    def embed(self, input_text=None, model='nova-embedding-stable', retry_count=0):\n        url = self.base_url + \"/embeddings\"\n        headers = {\n            \"Content-Type\": \"application/json\",\n            \"Authorization\": \"Bearer \"+self.authorization\n        }\n        payload = {\n            \"model\": model,\n            \"input\": [input_text]\n        }\n\n        response = requests.post(url, headers=headers, data=json.dumps(payload))\n        if response.status_code == 200:\n            response_data = response.json()\n            embedding = {}\n            embeddings = response_data.get('embeddings', [])\n            if embeddings:\n                embedding = embeddings[0].get('embedding', {})\n            return embedding\n        elif response.status_code == 401:\n            if retry_count < 3:\n                self.refresh_token()  # 刷新token\n                return self.embeddings(model, input_text, retry_count + 1)\n            else:\n                return {\"error\": \"Authentication failed after 3 retries.\"}\n        else:\n            return {\"error\": f\"Request failed with status code {response.status_code}\"}\n\n\n    def __del__(self):\n        with self.lock:\n            if self.timer:\n                self.timer.cancel()",
+            "name_column": 6
+        },
+        "__init__": {
+            "type": "FunctionDef",
+            "name": "__init__",
+            "md_content": "**__init__**: 这个函数的功能是初始化一个对象。\n\n在这个函数中，有以下几个关键的变量和操作：\n- version: 表示版本号，默认为'SenseChat'。\n- base_url: 表示API的基本URL地址。\n- ak: 表示从环境变量中获取的AK值。\n- sk: 表示从环境变量中获取的SK值。\n- authorization: 表示授权信息，默认为None。\n- refresh_interval: 表示刷新令牌的时间间隔，默认为1700。\n- timer: 表示定时器对象。\n- lock: 表示线程锁对象。\n- refresh_token(): 表示刷新令牌的函数。\n- total_tokens_used: 表示已使用的令牌数量。\n\n在初始化对象时，会根据传入的参数进行相应的赋值操作。其中，version、refresh_interval、base_url等变量会被赋予传入的值，ak和sk会从环境变量中获取相应的值。同时，authorization、timer、lock等变量会被初始化为默认值。\n\n在初始化完成后，会调用refresh_token()函数来刷新令牌，并将total_tokens_used初始化为0。\n\n**注意**：在使用这段代码时，需要注意以下几点：\n- 需要确保环境变量中存在SENSETIME_AK和SENSETIME_SK的值，否则ak和sk的值将为None。\n- 可以根据实际需求修改version和refresh_interval的值。\n- 需要确保base_url的值正确，以保证API的正常调用。\n- 可以根据实际需求修改refresh_token()函数的实现，以满足自定义的刷新逻辑。",
+            "code_start_line": 10,
+            "code_end_line": 20,
+            "parent": "SenseService",
+            "have_return": false,
+            "code_content": "    def __init__(self, version='SenseChat',refresh_interval=1700):\n        self.version=version\n        self.base_url = \"https://api.sensenova.cn/v1/llm\"\n        self.ak = os.getenv(\"SENSETIME_AK\", None)  # 从环境变量获取AK\n        self.sk = os.getenv(\"SENSETIME_SK\", None)   # 从环境变量获取SK\n        self.authorization = None\n        self.refresh_interval = refresh_interval\n        self.timer = None\n        self.lock = threading.Lock()\n        self.refresh_token()\n        self.total_tokens_used = 0 \n",
+            "name_column": 8
+        },
+        "generate_jwt_token": {
+            "type": "FunctionDef",
+            "name": "generate_jwt_token",
+            "md_content": "**generate_jwt_token**: 这个函数的功能是生成一个JWT令牌。\n\n该函数首先创建了一个字典类型的headers变量，用于指定JWT的算法和类型。然后创建了一个payload变量，用于指定JWT的签发者、过期时间和生效时间。接下来使用jwt库的encode函数，将payload和headers作为参数，使用HS256算法和self.sk作为密钥，生成JWT令牌。最后将生成的令牌返回。\n\n**注意**: 使用该代码时需要注意以下几点：\n- 需要确保在调用该函数之前已经设置了self.ak和self.sk的值，分别作为JWT的签发者和密钥。\n- 生成的JWT令牌的有效期为30分钟。\n\n**输出示例**:\n\"eyJhbGciOiAiSFMyNTYiLCAidHlwIjogIkpXVCJ9.eyJpc3MiOiAiYWRtaW4iLCAiZXhwIjogMTYyMzQ1MzEwMCwgIm5iZiI6ICIxNjIzNDUyOTk5In0.8Qy5n3cX5r3Yy7s7O7XU6vU3g9kQX7l3m3W6c3a3x3c\"",
+            "code_start_line": 22,
+            "code_end_line": 26,
+            "parent": "SenseService",
+            "have_return": true,
+            "code_content": "    def generate_jwt_token(self):\n        headers = {\"alg\": \"HS256\", \"typ\": \"JWT\"}\n        payload = {\"iss\": self.ak, \"exp\": int(time.time()) + 1800, \"nbf\": int(time.time()) - 5}\n        token = jwt.encode(payload, self.sk, algorithm=\"HS256\", headers=headers)\n        return token\n",
+            "name_column": 8
+        },
+        "refresh_token": {
+            "type": "FunctionDef",
+            "name": "refresh_token",
+            "md_content": "**refresh_token**: 这个函数的功能是刷新令牌。在调用该函数时，它会使用一个锁来确保线程安全。首先，它会调用generate_jwt_token()函数生成一个JWT令牌，并将其赋值给authorization变量。然后，它会检查timer变量是否存在，如果存在，则取消之前的定时器。接下来，它会创建一个新的定时器，使用refresh_interval参数作为定时器的时间间隔，并将refresh_token函数作为回调函数。最后，它会启动定时器，使refresh_token函数在指定的时间间隔后再次被调用。\n\n**注意**: 在使用该代码时需要注意以下几点：\n- 由于该函数使用了锁来确保线程安全，因此在调用该函数时需要注意避免死锁的情况。\n- 在调用该函数之前，需要确保已经正确设置了ak和sk变量，否则将无法生成有效的JWT令牌。\n- 在调用该函数之前，需要确保已经正确设置了refresh_interval参数，以确保定时器能够按照预期的时间间隔执行刷新操作。\n- 在调用该函数之后，可以通过访问authorization变量来获取最新的令牌值，以便在后续的API请求中使用。",
+            "code_start_line": 28,
+            "code_end_line": 34,
+            "parent": "SenseService",
+            "have_return": false,
+            "code_content": "    def refresh_token(self):\n        with self.lock:\n            self.authorization = self.generate_jwt_token()\n            if self.timer:\n                self.timer.cancel()\n            self.timer = threading.Timer(self.refresh_interval, self.refresh_token)\n            self.timer.start()\n",
+            "name_column": 8
+        },
+        "send_get_request": {
+            "type": "FunctionDef",
+            "name": "send_get_request",
+            "md_content": "**send_get_request**: 这个函数的功能是发送一个GET请求到指定的URL，并返回响应的JSON数据。\n\n该函数首先定义了一个URL变量，指定了请求的目标地址。然后定义了一个headers变量，包含了请求的头部信息，其中包括了授权信息和内容类型。\n\n接下来，使用requests库发送了一个GET请求，传入了URL和headers参数。发送请求后，将返回的响应保存在response变量中。\n\n最后，使用print函数打印出响应的JSON数据。\n\n**注意**: 使用该代码时需要注意以下几点：\n- 需要安装requests库，可以使用pip install requests命令进行安装。\n- 需要确保authorization属性已经正确设置，否则请求将无法通过授权验证。\n\n**输出示例**:\n{\n    \"status\": \"success\",\n    \"data\": {\n        \"models\": [\n            {\n                \"id\": \"1\",\n                \"name\": \"model1\"\n            },\n            {\n                \"id\": \"2\",\n                \"name\": \"model2\"\n            },\n            {\n                \"id\": \"3\",\n                \"name\": \"model3\"\n            }\n        ]\n    }\n}",
+            "code_start_line": 36,
+            "code_end_line": 44,
+            "parent": "SenseService",
+            "have_return": true,
+            "code_content": "    def send_get_request(self):\n        url = \"https://api.sensenova.cn/v1/llm/models\"\n        headers = {\n            \"Authorization\": \"Bearer \" +self.authorization,\n            \"Content-Type\": \"application/json\"\n        }\n        \n        response = requests.get(url, headers=headers)\n        return print(response.json())\n",
+            "name_column": 8
+        },
+        "ask_once": {
+            "type": "FunctionDef",
+            "name": "ask_once",
+            "md_content": "**ask_once**: 这个函数的功能是向模型发送一条消息并获取模型的回复。\n\n该函数接受以下参数：\n- messages: 要发送给模型的消息内容。\n- know_ids: 知识库的ID列表。\n- max_new_tokens: 生成的回复的最大token数量。\n- n: 生成回复的数量。\n- repetition_penalty: 控制生成回复中重复内容的惩罚力度。\n- stream: 是否以流式方式生成回复。\n- temperature: 控制生成回复的随机性。\n- top_p: 控制生成回复的概率分布。\n- user: 用户信息。\n- knowledge_config: 知识库配置。\n- plugins: 插件配置。\n- retry_count: 重试次数。\n\n函数内部的实现逻辑如下：\n1. 构建请求的URL和请求头。\n2. 构建请求的payload，包括消息内容、模型版本、生成回复的数量等信息。\n3. 发送POST请求，将payload转换为JSON格式，并附带请求头。\n4. 解析响应数据，提取出回复的消息内容和使用的token数量。\n5. 根据响应的状态码进行相应的处理：\n   - 如果状态码为200，表示请求成功，打印使用的token数量，并返回回复的消息内容。\n   - 如果状态码为401，表示身份验证失败，判断重试次数是否小于3，如果是，则刷新token并重新发送请求；如果不是，则返回身份验证失败的错误信息。\n   - 其他状态码，直接返回状态码。\n\n**注意**：在使用该函数时需要注意以下几点：\n- 需要提供有效的模型授权信息。\n- 可以通过设置参数来控制生成回复的质量和数量。\n- 如果身份验证失败，会自动尝试重新发送请求，最多重试3次。\n\n**输出示例**：\n```\n{\n    \"message\": \"这是模型的回复消息\",\n    \"total_tokens_used\": 100\n}\n```",
+            "code_start_line": 46,
+            "code_end_line": 83,
+            "parent": "SenseService",
+            "have_return": true,
+            "code_content": "    def ask_once(self,messages=None, know_ids=None, max_new_tokens=None, n=1, repetition_penalty=1.05, stream=False, temperature=0.8, top_p=0.7, user=None, knowledge_config=None, plugins=None, retry_count=0):\n        url = self.base_url+'/chat-completions'\n        headers = {\"Content-Type\": \"application/json\", \"Authorization\": \"Bearer \"+self.authorization}\n        payload = {\n            \"max_new_tokens\": max_new_tokens if max_new_tokens is not None else 1024,\n            \"messages\":  [{\n                \"content\": messages,\n                \"role\": \"user\"\n            }],\n            \"model\": self.version,\n            \"n\": n,\n            \"repetition_penalty\": repetition_penalty,\n            \"stream\": stream,\n            \"temperature\": temperature,\n            \"top_p\": top_p,\n            'knowledge_config':{},\n            'plugins':{}\n        }\n\n        response = requests.post(url, headers=headers, data=json.dumps(payload))\n        response_data = response.json()\n\n        # 提取'message'字段的值\n        total_tokens = response_data['data']['usage']['total_tokens']\n        self.total_tokens_used += total_tokens  # 更新总共使用的token数量\n        message = response_data['data']['choices'][0]['message']\n        if response.status_code == 200:\n            print(\"本次使用的token数量：\", total_tokens)\n            return message\n        elif response.status_code == 401:\n            if retry_count < 3:  # 允许最多重试3次\n                self.refresh_token()  # 刷新token\n                return self.send_request(know_ids, max_new_tokens, messages, model, n, repetition_penalty, stream, temperature, top_p, user, knowledge_config, plugins, retry_count + 1)\n            else:\n                # 超过重试次数，可以返回错误信息或抛出异常\n                return {\"error\": \"Authentication failed after 3 retries.\"}\n        else:\n            return response.status_code\n",
+            "name_column": 8
+        },
+        "embed": {
+            "type": "FunctionDef",
+            "name": "embed",
+            "md_content": "**embed**: 这个函数的功能是将输入的文本嵌入到指定的模型中，并返回嵌入向量。\n\n这个函数接受三个参数：\n- input_text（可选）：要嵌入的文本。默认为None。\n- model：要使用的模型的名称。默认为'nova-embedding-stable'。\n- retry_count：重试次数。默认为0。\n\n在函数内部，首先构建了请求的URL和请求头。然后，根据传入的参数构建了请求的payload。接下来，使用POST方法发送请求，并将返回的结果存储在response变量中。\n\n如果返回的状态码为200，表示请求成功。则从返回的数据中提取出嵌入向量，并将其返回。\n\n如果返回的状态码为401，表示身份验证失败。在这种情况下，函数会尝试重新获取令牌，并递归调用自身，直到重试次数达到3次为止。如果重试次数超过3次，则返回一个包含错误信息的字典。\n\n如果返回的状态码不是200或401，则返回一个包含错误信息的字典，其中包含返回的状态码。\n\n**注意**：在使用这段代码时需要注意以下几点：\n- 需要确保已经正确设置了base_url和authorization属性。\n- 如果输入的文本为空，则返回的嵌入向量也会为空。\n- 如果模型名称不正确或不存在，则返回的嵌入向量也会为空。\n\n**输出示例**：\n```\n{\n    \"embedding\": {\n        \"vector\": [0.1, 0.2, 0.3, ...]\n    }\n}\n```",
+            "code_start_line": 85,
+            "code_end_line": 111,
+            "parent": "SenseService",
+            "have_return": true,
+            "code_content": "    def embed(self, input_text=None, model='nova-embedding-stable', retry_count=0):\n        url = self.base_url + \"/embeddings\"\n        headers = {\n            \"Content-Type\": \"application/json\",\n            \"Authorization\": \"Bearer \"+self.authorization\n        }\n        payload = {\n            \"model\": model,\n            \"input\": [input_text]\n        }\n\n        response = requests.post(url, headers=headers, data=json.dumps(payload))\n        if response.status_code == 200:\n            response_data = response.json()\n            embedding = {}\n            embeddings = response_data.get('embeddings', [])\n            if embeddings:\n                embedding = embeddings[0].get('embedding', {})\n            return embedding\n        elif response.status_code == 401:\n            if retry_count < 3:\n                self.refresh_token()  # 刷新token\n                return self.embeddings(model, input_text, retry_count + 1)\n            else:\n                return {\"error\": \"Authentication failed after 3 retries.\"}\n        else:\n            return {\"error\": f\"Request failed with status code {response.status_code}\"}\n",
+            "name_column": 8
+        },
+        "__del__": {
+            "type": "FunctionDef",
+            "name": "__del__",
+            "md_content": "**__del__**: 此函数的功能是在对象被销毁时执行一些操作。\n\n在这段代码中，`__del__`函数被用于定义一个对象的析构函数。析构函数是在对象被销毁时自动调用的函数，用于执行一些清理操作或释放资源。在这个函数中，首先使用`with`语句获取了`self.lock`的锁，以确保在执行清理操作时不会被其他线程干扰。然后，通过判断`self.timer`是否存在，来决定是否执行取消定时器的操作。如果`self.timer`存在，则调用`cancel()`方法取消定时器。\n\n需要注意的是，析构函数的调用是由Python的垃圾回收机制自动触发的，无法手动调用。当对象不再被引用时，垃圾回收机制会自动调用析构函数来销毁对象。在析构函数中，可以执行一些清理操作，如关闭文件、释放资源等。\n\n**注意**：在编写析构函数时，需要注意以下几点：\n- 析构函数的命名固定为`__del__`，不能更改。\n- 析构函数没有参数，只有一个`self`参数，用于引用当前对象。\n- 析构函数的执行时机是在对象被销毁时，无法手动调用。\n- 析构函数中应该只执行一些清理操作或释放资源的操作，不应该进行复杂的计算或调用其他对象的方法。",
+            "code_start_line": 114,
+            "code_end_line": 117,
+            "parent": "SenseService",
+            "have_return": false,
+            "code_content": "    def __del__(self):\n        with self.lock:\n            if self.timer:\n                self.timer.cancel()",
+            "name_column": 8
+        }
+    },
+    "LLM_API\\__init__.py": {}
+}
