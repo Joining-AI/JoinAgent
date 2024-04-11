@@ -170,5 +170,6 @@
             "name_column": 8
         }
     },
-    "LLM_API\\__init__.py": {}
+    "LLM_API\\__init__.py": {},
+    "Json_Processor/__init__.py": {}
 }

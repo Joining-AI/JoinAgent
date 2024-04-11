@@ -1,9 +1,0 @@
-repos:
-  - repo: local
-    hooks:
-    - id: repo-agent
-      name: RepoAgent
-      entry: python D:/Joining/RepoAgent/RepoAgent/repo_agent/runner.py
-      language: system
-      # 可以指定钩子触发的文件类型，但是目前只支持python
-      types: [python]
