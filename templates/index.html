@@ -1,0 +1,16 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Flask Plotly Visualization</title>
+    <!-- 引入 Plotly.js 库 -->
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+</head>
+<body>
+    <div>
+        <!-- 这里显示 Plotly 图表 -->
+        {{ plot | safe }}
+    </div>
+</body>
+</html>

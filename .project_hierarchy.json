@@ -1,0 +1,174 @@
+{
+    "LLM_API\\glm.py": {
+        "GLMService": {
+            "type": "ClassDef",
+            "name": "GLMService",
+            "md_content": "",
+            "code_start_line": 5,
+            "code_end_line": 73,
+            "parent": null,
+            "have_return": true,
+            "code_content": "class GLMService:\n    def __init__(self, version=\"glm-3-turbo\"):\n        # 加载当前目录的.env文件\n        load_dotenv()\n        self.version=version\n        self.total_tokens_used = 0  # 用于保存总共使用的token数量\n        # 从环境变量中导入API密钥\n        self.api_key = os.getenv('GLM_API', None)\n        self.client = ZhipuAI(api_key=self.api_key)  # 创建客户端实例\n\n    def ask_once(self, query, url=None):\n        \"\"\"\n        使用zhipuai库向GLM-3-Turbo模型发送请求并获取回答\n        :param query: 用户的查询字符串\n        :return: 模型的回答字符串\n        \"\"\"\n        if self.version in ['glm-3-turbo', 'glm-4']:\n            response = self.client.chat.completions.create(\n                model=self.version,\n                messages=[\n                    {\"role\": \"user\", \"content\": query}\n                ]\n            )\n            # 检查响应并提取信息\n            if response.choices:\n                # 正确地访问响应对象的属性\n                message = response.choices[0].message.content\n                # 更新token使用量\n                if hasattr(response, 'usage'):\n                    self.total_tokens_used += response.usage.total_tokens\n                return message\n            else:\n                return \"无法获取回答。\"\n            \n        else:\n            if url is None:  # 检查是否提供了URL\n                return None, \"请提供图像URL\"\n            response = self.client.chat.completions.create(\n                model=self.version,  # 填写需要调用的模型名称\n                messages=[\n                    {\n                        \"role\": \"user\",\n                        \"content\": [\n                            {\n                                \"type\": \"text\",\n                                \"text\": query\n                            },\n                            {\n                                \"type\": \"image_url\",\n                                \"image_url\": {\n                                    \"url\": url\n                                }\n                            }\n                        ]\n                    }\n                ]\n            )\n\n            \n            # 检查响应并提取信息\n            if response.choices:\n                # 正确地访问响应对象的属性\n                message = response.choices[0].message.content\n                # 更新token使用量\n                if hasattr(response, 'usage'):\n                    self.total_tokens_used += response.usage.total_tokens\n                return message, None\n            else:\n                return None, \"无法获取回答。\"",
+            "name_column": 6
+        },
+        "__init__": {
+            "type": "FunctionDef",
+            "name": "__init__",
+            "md_content": "",
+            "code_start_line": 6,
+            "code_end_line": 13,
+            "parent": "GLMService",
+            "have_return": false,
+            "code_content": "    def __init__(self, version=\"glm-3-turbo\"):\n        # 加载当前目录的.env文件\n        load_dotenv()\n        self.version=version\n        self.total_tokens_used = 0  # 用于保存总共使用的token数量\n        # 从环境变量中导入API密钥\n        self.api_key = os.getenv('GLM_API', None)\n        self.client = ZhipuAI(api_key=self.api_key)  # 创建客户端实例\n",
+            "name_column": 8
+        },
+        "ask_once": {
+            "type": "FunctionDef",
+            "name": "ask_once",
+            "md_content": "",
+            "code_start_line": 15,
+            "code_end_line": 73,
+            "parent": "GLMService",
+            "have_return": true,
+            "code_content": "    def ask_once(self, query, url=None):\n        \"\"\"\n        使用zhipuai库向GLM-3-Turbo模型发送请求并获取回答\n        :param query: 用户的查询字符串\n        :return: 模型的回答字符串\n        \"\"\"\n        if self.version in ['glm-3-turbo', 'glm-4']:\n            response = self.client.chat.completions.create(\n                model=self.version,\n                messages=[\n                    {\"role\": \"user\", \"content\": query}\n                ]\n            )\n            # 检查响应并提取信息\n            if response.choices:\n                # 正确地访问响应对象的属性\n                message = response.choices[0].message.content\n                # 更新token使用量\n                if hasattr(response, 'usage'):\n                    self.total_tokens_used += response.usage.total_tokens\n                return message\n            else:\n                return \"无法获取回答。\"\n            \n        else:\n            if url is None:  # 检查是否提供了URL\n                return None, \"请提供图像URL\"\n            response = self.client.chat.completions.create(\n                model=self.version,  # 填写需要调用的模型名称\n                messages=[\n                    {\n                        \"role\": \"user\",\n                        \"content\": [\n                            {\n                                \"type\": \"text\",\n                                \"text\": query\n                            },\n                            {\n                                \"type\": \"image_url\",\n                                \"image_url\": {\n                                    \"url\": url\n                                }\n                            }\n                        ]\n                    }\n                ]\n            )\n\n            \n            # 检查响应并提取信息\n            if response.choices:\n                # 正确地访问响应对象的属性\n                message = response.choices[0].message.content\n                # 更新token使用量\n                if hasattr(response, 'usage'):\n                    self.total_tokens_used += response.usage.total_tokens\n                return message, None\n            else:\n                return None, \"无法获取回答。\"",
+            "name_column": 8
+        }
+    },
+    "LLM_API\\moonshot.py": {
+        "KimiService": {
+            "type": "ClassDef",
+            "name": "KimiService",
+            "md_content": "",
+            "code_start_line": 5,
+            "code_end_line": 45,
+            "parent": null,
+            "have_return": true,
+            "code_content": "class KimiService:\n    def __init__(self, version='8k'):\n        # 加载当前目录的.env文件\n        load_dotenv()\n\n        self.version='moonshot-v1-'+version\n        self.client = None\n        self.initialized = False\n        self.total_tokens_used = 0  # 添加一个成员变量用于保存总共使用的token数量\n        # 从环境变量中导入API密钥和基础URL\n        api_key = os.getenv('KIMI_API', None)\n        base_url ='https://api.moonshot.cn/v1'\n        self.init_service(api_key, base_url)\n\n    def init_service(self, api_key: str, base_url: str) -> bool:\n        self.client = OpenAI(\n            api_key=api_key,\n            base_url=base_url\n        )\n        self.initialized = True\n        return True\n\n    def ask_once(self, prompt: str) -> str:\n        if not self.initialized:\n            raise ValueError(\"服务未初始化，请先调用 init_service 方法初始化服务。\")\n        \n        if not self.client:\n            raise ValueError(\"OpenAI 客户端未正确初始化，请检查初始化过程。\")\n        \n        response = self.client.chat.completions.create(\n            model=self.version,\n            messages=[{\"role\": \"user\", \"content\": prompt}]\n        )\n\n        if response:\n            total_tokens = response.usage.total_tokens\n            self.total_tokens_used += total_tokens  # 更新总共使用的token数量\n            print(\"本次使用的token数量：\", total_tokens)\n            return response.choices[0].message.content\n        else:\n            return \"\"\n",
+            "name_column": 6
+        },
+        "__init__": {
+            "type": "FunctionDef",
+            "name": "__init__",
+            "md_content": "",
+            "code_start_line": 6,
+            "code_end_line": 17,
+            "parent": "KimiService",
+            "have_return": false,
+            "code_content": "    def __init__(self, version='8k'):\n        # 加载当前目录的.env文件\n        load_dotenv()\n\n        self.version='moonshot-v1-'+version\n        self.client = None\n        self.initialized = False\n        self.total_tokens_used = 0  # 添加一个成员变量用于保存总共使用的token数量\n        # 从环境变量中导入API密钥和基础URL\n        api_key = os.getenv('KIMI_API', None)\n        base_url ='https://api.moonshot.cn/v1'\n        self.init_service(api_key, base_url)\n",
+            "name_column": 8
+        },
+        "init_service": {
+            "type": "FunctionDef",
+            "name": "init_service",
+            "md_content": "",
+            "code_start_line": 19,
+            "code_end_line": 25,
+            "parent": "KimiService",
+            "have_return": true,
+            "code_content": "    def init_service(self, api_key: str, base_url: str) -> bool:\n        self.client = OpenAI(\n            api_key=api_key,\n            base_url=base_url\n        )\n        self.initialized = True\n        return True\n",
+            "name_column": 8
+        },
+        "ask_once": {
+            "type": "FunctionDef",
+            "name": "ask_once",
+            "md_content": "",
+            "code_start_line": 27,
+            "code_end_line": 45,
+            "parent": "KimiService",
+            "have_return": true,
+            "code_content": "    def ask_once(self, prompt: str) -> str:\n        if not self.initialized:\n            raise ValueError(\"服务未初始化，请先调用 init_service 方法初始化服务。\")\n        \n        if not self.client:\n            raise ValueError(\"OpenAI 客户端未正确初始化，请检查初始化过程。\")\n        \n        response = self.client.chat.completions.create(\n            model=self.version,\n            messages=[{\"role\": \"user\", \"content\": prompt}]\n        )\n\n        if response:\n            total_tokens = response.usage.total_tokens\n            self.total_tokens_used += total_tokens  # 更新总共使用的token数量\n            print(\"本次使用的token数量：\", total_tokens)\n            return response.choices[0].message.content\n        else:\n            return \"\"\n",
+            "name_column": 8
+        }
+    },
+    "LLM_API\\sense_time.py": {
+        "SenseService": {
+            "type": "ClassDef",
+            "name": "SenseService",
+            "md_content": "",
+            "code_start_line": 9,
+            "code_end_line": 117,
+            "parent": null,
+            "have_return": true,
+            "code_content": "class SenseService:\n    def __init__(self, version='SenseChat',refresh_interval=1700):\n        self.version=version\n        self.base_url = \"https://api.sensenova.cn/v1/llm\"\n        self.ak = os.getenv(\"SENSETIME_AK\", None)  # 从环境变量获取AK\n        self.sk = os.getenv(\"SENSETIME_SK\", None)   # 从环境变量获取SK\n        self.authorization = None\n        self.refresh_interval = refresh_interval\n        self.timer = None\n        self.lock = threading.Lock()\n        self.refresh_token()\n        self.total_tokens_used = 0 \n\n    def generate_jwt_token(self):\n        headers = {\"alg\": \"HS256\", \"typ\": \"JWT\"}\n        payload = {\"iss\": self.ak, \"exp\": int(time.time()) + 1800, \"nbf\": int(time.time()) - 5}\n        token = jwt.encode(payload, self.sk, algorithm=\"HS256\", headers=headers)\n        return token\n\n    def refresh_token(self):\n        with self.lock:\n            self.authorization = self.generate_jwt_token()\n            if self.timer:\n                self.timer.cancel()\n            self.timer = threading.Timer(self.refresh_interval, self.refresh_token)\n            self.timer.start()\n\n    def send_get_request(self):\n        url = \"https://api.sensenova.cn/v1/llm/models\"\n        headers = {\n            \"Authorization\": \"Bearer \" +self.authorization,\n            \"Content-Type\": \"application/json\"\n        }\n        \n        response = requests.get(url, headers=headers)\n        return print(response.json())\n\n    def ask_once(self,messages=None, know_ids=None, max_new_tokens=None, n=1, repetition_penalty=1.05, stream=False, temperature=0.8, top_p=0.7, user=None, knowledge_config=None, plugins=None, retry_count=0):\n        url = self.base_url+'/chat-completions'\n        headers = {\"Content-Type\": \"application/json\", \"Authorization\": \"Bearer \"+self.authorization}\n        payload = {\n            \"max_new_tokens\": max_new_tokens if max_new_tokens is not None else 1024,\n            \"messages\":  [{\n                \"content\": messages,\n                \"role\": \"user\"\n            }],\n            \"model\": self.version,\n            \"n\": n,\n            \"repetition_penalty\": repetition_penalty,\n            \"stream\": stream,\n            \"temperature\": temperature,\n            \"top_p\": top_p,\n            'knowledge_config':{},\n            'plugins':{}\n        }\n\n        response = requests.post(url, headers=headers, data=json.dumps(payload))\n        response_data = response.json()\n\n        # 提取'message'字段的值\n        total_tokens = response_data['data']['usage']['total_tokens']\n        self.total_tokens_used += total_tokens  # 更新总共使用的token数量\n        message = response_data['data']['choices'][0]['message']\n        if response.status_code == 200:\n            print(\"本次使用的token数量：\", total_tokens)\n            return message\n        elif response.status_code == 401:\n            if retry_count < 3:  # 允许最多重试3次\n                self.refresh_token()  # 刷新token\n                return self.send_request(know_ids, max_new_tokens, messages, model, n, repetition_penalty, stream, temperature, top_p, user, knowledge_config, plugins, retry_count + 1)\n            else:\n                # 超过重试次数，可以返回错误信息或抛出异常\n                return {\"error\": \"Authentication failed after 3 retries.\"}\n        else:\n            return response.status_code\n\n    def embed(self, input_text=None, model='nova-embedding-stable', retry_count=0):\n        url = self.base_url + \"/embeddings\"\n        headers = {\n            \"Content-Type\": \"application/json\",\n            \"Authorization\": \"Bearer \"+self.authorization\n        }\n        payload = {\n            \"model\": model,\n            \"input\": [input_text]\n        }\n\n        response = requests.post(url, headers=headers, data=json.dumps(payload))\n        if response.status_code == 200:\n            response_data = response.json()\n            embedding = {}\n            embeddings = response_data.get('embeddings', [])\n            if embeddings:\n                embedding = embeddings[0].get('embedding', {})\n            return embedding\n        elif response.status_code == 401:\n            if retry_count < 3:\n                self.refresh_token()  # 刷新token\n                return self.embeddings(model, input_text, retry_count + 1)\n            else:\n                return {\"error\": \"Authentication failed after 3 retries.\"}\n        else:\n            return {\"error\": f\"Request failed with status code {response.status_code}\"}\n\n\n    def __del__(self):\n        with self.lock:\n            if self.timer:\n                self.timer.cancel()",
+            "name_column": 6
+        },
+        "__init__": {
+            "type": "FunctionDef",
+            "name": "__init__",
+            "md_content": "",
+            "code_start_line": 10,
+            "code_end_line": 20,
+            "parent": "SenseService",
+            "have_return": false,
+            "code_content": "    def __init__(self, version='SenseChat',refresh_interval=1700):\n        self.version=version\n        self.base_url = \"https://api.sensenova.cn/v1/llm\"\n        self.ak = os.getenv(\"SENSETIME_AK\", None)  # 从环境变量获取AK\n        self.sk = os.getenv(\"SENSETIME_SK\", None)   # 从环境变量获取SK\n        self.authorization = None\n        self.refresh_interval = refresh_interval\n        self.timer = None\n        self.lock = threading.Lock()\n        self.refresh_token()\n        self.total_tokens_used = 0 \n",
+            "name_column": 8
+        },
+        "generate_jwt_token": {
+            "type": "FunctionDef",
+            "name": "generate_jwt_token",
+            "md_content": "",
+            "code_start_line": 22,
+            "code_end_line": 26,
+            "parent": "SenseService",
+            "have_return": true,
+            "code_content": "    def generate_jwt_token(self):\n        headers = {\"alg\": \"HS256\", \"typ\": \"JWT\"}\n        payload = {\"iss\": self.ak, \"exp\": int(time.time()) + 1800, \"nbf\": int(time.time()) - 5}\n        token = jwt.encode(payload, self.sk, algorithm=\"HS256\", headers=headers)\n        return token\n",
+            "name_column": 8
+        },
+        "refresh_token": {
+            "type": "FunctionDef",
+            "name": "refresh_token",
+            "md_content": "",
+            "code_start_line": 28,
+            "code_end_line": 34,
+            "parent": "SenseService",
+            "have_return": false,
+            "code_content": "    def refresh_token(self):\n        with self.lock:\n            self.authorization = self.generate_jwt_token()\n            if self.timer:\n                self.timer.cancel()\n            self.timer = threading.Timer(self.refresh_interval, self.refresh_token)\n            self.timer.start()\n",
+            "name_column": 8
+        },
+        "send_get_request": {
+            "type": "FunctionDef",
+            "name": "send_get_request",
+            "md_content": "",
+            "code_start_line": 36,
+            "code_end_line": 44,
+            "parent": "SenseService",
+            "have_return": true,
+            "code_content": "    def send_get_request(self):\n        url = \"https://api.sensenova.cn/v1/llm/models\"\n        headers = {\n            \"Authorization\": \"Bearer \" +self.authorization,\n            \"Content-Type\": \"application/json\"\n        }\n        \n        response = requests.get(url, headers=headers)\n        return print(response.json())\n",
+            "name_column": 8
+        },
+        "ask_once": {
+            "type": "FunctionDef",
+            "name": "ask_once",
+            "md_content": "",
+            "code_start_line": 46,
+            "code_end_line": 83,
+            "parent": "SenseService",
+            "have_return": true,
+            "code_content": "    def ask_once(self,messages=None, know_ids=None, max_new_tokens=None, n=1, repetition_penalty=1.05, stream=False, temperature=0.8, top_p=0.7, user=None, knowledge_config=None, plugins=None, retry_count=0):\n        url = self.base_url+'/chat-completions'\n        headers = {\"Content-Type\": \"application/json\", \"Authorization\": \"Bearer \"+self.authorization}\n        payload = {\n            \"max_new_tokens\": max_new_tokens if max_new_tokens is not None else 1024,\n            \"messages\":  [{\n                \"content\": messages,\n                \"role\": \"user\"\n            }],\n            \"model\": self.version,\n            \"n\": n,\n            \"repetition_penalty\": repetition_penalty,\n            \"stream\": stream,\n            \"temperature\": temperature,\n            \"top_p\": top_p,\n            'knowledge_config':{},\n            'plugins':{}\n        }\n\n        response = requests.post(url, headers=headers, data=json.dumps(payload))\n        response_data = response.json()\n\n        # 提取'message'字段的值\n        total_tokens = response_data['data']['usage']['total_tokens']\n        self.total_tokens_used += total_tokens  # 更新总共使用的token数量\n        message = response_data['data']['choices'][0]['message']\n        if response.status_code == 200:\n            print(\"本次使用的token数量：\", total_tokens)\n            return message\n        elif response.status_code == 401:\n            if retry_count < 3:  # 允许最多重试3次\n                self.refresh_token()  # 刷新token\n                return self.send_request(know_ids, max_new_tokens, messages, model, n, repetition_penalty, stream, temperature, top_p, user, knowledge_config, plugins, retry_count + 1)\n            else:\n                # 超过重试次数，可以返回错误信息或抛出异常\n                return {\"error\": \"Authentication failed after 3 retries.\"}\n        else:\n            return response.status_code\n",
+            "name_column": 8
+        },
+        "embed": {
+            "type": "FunctionDef",
+            "name": "embed",
+            "md_content": "",
+            "code_start_line": 85,
+            "code_end_line": 111,
+            "parent": "SenseService",
+            "have_return": true,
+            "code_content": "    def embed(self, input_text=None, model='nova-embedding-stable', retry_count=0):\n        url = self.base_url + \"/embeddings\"\n        headers = {\n            \"Content-Type\": \"application/json\",\n            \"Authorization\": \"Bearer \"+self.authorization\n        }\n        payload = {\n            \"model\": model,\n            \"input\": [input_text]\n        }\n\n        response = requests.post(url, headers=headers, data=json.dumps(payload))\n        if response.status_code == 200:\n            response_data = response.json()\n            embedding = {}\n            embeddings = response_data.get('embeddings', [])\n            if embeddings:\n                embedding = embeddings[0].get('embedding', {})\n            return embedding\n        elif response.status_code == 401:\n            if retry_count < 3:\n                self.refresh_token()  # 刷新token\n                return self.embeddings(model, input_text, retry_count + 1)\n            else:\n                return {\"error\": \"Authentication failed after 3 retries.\"}\n        else:\n            return {\"error\": f\"Request failed with status code {response.status_code}\"}\n",
+            "name_column": 8
+        },
+        "__del__": {
+            "type": "FunctionDef",
+            "name": "__del__",
+            "md_content": "",
+            "code_start_line": 114,
+            "code_end_line": 117,
+            "parent": "SenseService",
+            "have_return": false,
+            "code_content": "    def __del__(self):\n        with self.lock:\n            if self.timer:\n                self.timer.cancel()",
+            "name_column": 8
+        }
+    },
+    "LLM_API\\__init__.py": {}
+}
