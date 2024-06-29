@@ -1,5 +1,6 @@
 import json
 import ast
+import re
 
 class JSProcessor:
     def __init__(self):
@@ -75,7 +76,7 @@ class JSProcessor:
         try:
             # 替换中文标点为英文标点
             str_with_dict = str_with_dict.replace("，", ",").replace("‘", "'").replace("’", "'").replace("“", "'").replace("”", "'").replace("。", ".").replace("：", ":").replace("；", ";").replace("？", "?").replace("【", "[").replace("】", "]").replace("（", "(").replace("）", ")").replace("！", "!").replace("—", "-").replace("…", "...")
-
+            str_with_dict = re.sub(r'(".*?")', lambda m: m.group(1).replace('\n', '\\n'), str_with_dict, flags=re.DOTALL)
             # 找到第一个'{'和最后一个'}'的位置
             start_index = str_with_dict.find('{')
             end_index = str_with_dict.rfind('}') + 1  # 加1是因为切片操作不包含结束索引
