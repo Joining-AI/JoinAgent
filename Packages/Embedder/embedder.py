@@ -58,7 +58,7 @@ class Embedder:
 
     def partition_by_similarity(self, data_dict, threshold):
         keys = list(data_dict.keys())
-        vectors = [data_dict[key]["嵌入向量"] for key in keys]
+        vectors = [data_dict[key] for key in keys]
         
         # 计算相似度矩阵
         similarity_matrix = cosine_similarity(vectors)

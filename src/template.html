@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>节点和边信息</title>
+    <style>
+        body, html {
+            width: 100%;
+            height: 100%;
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            display: flex;
+        }
+        svg {
+            flex: 1;
+            display: block;
+        }
+        .node circle {
+            stroke: #fff;
+            stroke-width: 1.5px;
+        }
+        .edge {
+            stroke: #999;
+            stroke-opacity: 0.6;
+        }
+        text {
+            font-size: 11px;
+            pointer-events: none;
+        }
+        #sidebar {
+            width: 300px;
+            height: 100%;
+            background-color: #f0f0f0;
+            border-left: 1px solid #ddd;
+            padding: 20px;
+            box-shadow: -2px 0 5px rgba(0,0,0,0.1);
+            overflow-y: auto;
+            transition: transform 0.3s ease;
+            position: fixed;
+            top: 0;
+            right: 0;
+            transform: translateX(100%);
+        }
+        #sidebar.show {
+            transform: translateX(0);
+        }
+        #toggleSidebar, #reset {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 10px;
+            cursor: pointer;
+            z-index: 100;
+        }
+        #reset {
+            right: 130px;
+        }
+        .selected-node {
+            fill: gold;
+            stroke: #fff;
+            stroke-width: 1.5px;
+        }
+        .neighbor-missing-node {
+            fill: green;
+        }
+    </style>
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+</head>
+<body>
+    <svg id="canvas"></svg>
+    <div id="sidebar">
+        <h2 id="sidebar-title">节点信息</h2>
+        <p id="sidebar-content">点击一个节点查看详细信息</p>
+    </div>
+    <button id="toggleSidebar">节点信息</button>
+    <button id="reset">重置视图</button>
+    <script>
+        // 使用连通性分析来识别团簇，将边视为无向
+        function findClusters(nodes, links) {
+            const clusters = [];
+            const visited = new Set();
+
+            function dfs(node, cluster) {
+                visited.add(node.id);
+                cluster.push(node);
+                links.forEach(link => {
+                    if (link.source === node.id && !visited.has(link.target)) {
+                        dfs(nodes.find(n => n.id === link.target), cluster);
+                    } else if (link.target === node.id && !visited.has(link.source)) {
+                        dfs(nodes.find(n => n.id === link.source), cluster);
+                    }
+                });
+            }
+
+            nodes.forEach(node => {
+                if (!visited.has(node.id)) {
+                    const cluster = [];
+                    dfs(node, cluster);
+                    clusters.push(cluster);
+                }
+            });
+
+            return clusters;
+        }
+
+        // 识别团簇并为其上色
+        function colorClusters(nodes, links) {
+            const clusters = findClusters(nodes, links);
+            console.log('找到的团簇:', clusters);
+            const color = d3.scaleOrdinal(d3.schemeCategory10);
+
+            clusters.forEach((cluster, clusterIndex) => {
+                if (cluster.length > 150000) {
+                    console.log('需要进一步划分的团簇:', cluster);
+                    const numSubClusters = Math.ceil(cluster.length / 15);
+                    const subClusters = girvanNewman(cluster, links, numSubClusters);
+                    subClusters.forEach((subCluster, subIndex) => {
+                        console.log('子团簇:', subCluster);
+                        subCluster.nodes.forEach(node => {
+                            node.cluster = `${clusterIndex}-${subIndex}`;
+                            node.color = color(`${clusterIndex}-${subIndex}`);
+                        });
+                    });
+                } else {
+                    cluster.forEach(node => {
+                        node.cluster = clusterIndex;
+                        node.color = color(clusterIndex);
+                    });
+                }
+            });
+
+            console.log('上色后的节点:', nodes);
+        }
+
+        // 定义节点和边数据
+        const nodes = {{ nodes }};
+        const links = {{ links }};
+        
+        // 识别团簇并为其上色
+        colorClusters(nodes, links);
+        let originalNodes = JSON.parse(JSON.stringify(nodes));
+        let originalLinks = JSON.parse(JSON.stringify(links));
+
+        let selectedNodeId = null; // 记录选中的节点 ID
+
+        // 创建SVG和力导向仿真
+        const width = window.innerWidth; 
+        const height = window.innerHeight;
+        const svg = d3.select("#canvas")
+            .attr("width", width)
+            .attr("height", height)
+            .append("g")
+            .call(d3.zoom() // 添加缩放和拖拽功能
+                .on("zoom", (event) => {
+                    svg.attr("transform", event.transform);
+                }))
+            .on("dblclick.zoom", null); // 禁用双击缩放
+
+        const simulation = d3.forceSimulation(nodes)
+            .force("link", d3.forceLink(links).id(d => d.id).distance(100)) // 调整距离
+            .force("charge", d3.forceManyBody().strength(-50)) // 调整力的强度
+            .force("center", d3.forceCenter(width / 2, height / 2));
+
+        // 绘制边
+        let link = svg.append("g")
+            .attr("class", "links")
+            .selectAll("line")
+            .data(links)
+            .enter().append("line")
+            .attr("class", "edge");
+
+        // 绘制节点
+        let node = svg.append("g")
+            .attr("class", "nodes")
+            .selectAll("g")
+            .data(nodes)
+            .enter().append("g")
+            .attr("class", "node")
+            .call(d3.drag()
+                .on("start", dragstarted)
+                .on("drag", dragged)
+                .on("end", dragended));
+
+        node.append("circle")
+            .attr("r", 10)
+            .attr("fill", d => d.color);
+
+        node.append("text")
+            .attr("dy", ".35em")
+            .text(d => d.name);
+
+        node.on("mouseover", mouseovered)
+            .on("mouseout", mouseouted)
+            .on("click", nodeClicked);
+
+        // 更新节点信息显示函数
+        function mouseovered(event, d) {
+            const infoDiv = d3.select("#info");
+            infoDiv.select("#info-title").text(d.name);
+            infoDiv.select("#info-content").text(d.content); // 假设d.content包含节点的详细信息
+            infoDiv.style("display", "block");
+            infoDiv.style("left", (event.pageX) + "px");
+            infoDiv.style("top", (event.pageY) + "px");
+        }
+
+        // 更新节点信息隐藏函数
+        function mouseouted() {
+            d3.select("#info").style("display", "none");
+        }
+
+        // 节点点击事件处理函数
+        function nodeClicked(event, d) {
+            selectedNodeId = d.id; // 记录选中的节点 ID
+            const neighborNodeIds = new Set();
+            links.forEach(link => {
+                if (link.source.id === d.id) {
+                    neighborNodeIds.add(link.target.id);
+                } else if (link.target.id === d.id) {
+                    neighborNodeIds.add(link.source.id);
+                }
+            });
+            neighborNodeIds.add(d.id);
+
+            const filteredNodes = nodes.filter(node => neighborNodeIds.has(node.id));
+            const filteredLinks = links.filter(link => neighborNodeIds.has(link.source.id) && neighborNodeIds.has(link.target.id));
+
+            updateGraph(filteredNodes, filteredLinks);
+
+            // 在右边栏显示选中节点的信息
+            d3.select("#sidebar-title").text(d.name);
+            d3.select("#sidebar-content").text(d.content); // 假设d.content包含节点的详细信息
+            d3.select("#sidebar").classed("show", true);
+        }
+
+        // 检查节点是否有未展示的邻居
+        function hasMissingNeighbors(node, newNodes) {
+            const neighborNodeIds = new Set();
+            links.forEach(link => {
+                if (link.source.id === node.id) {
+                    neighborNodeIds.add(link.target.id);
+                } else if (link.target.id === node.id) {
+                    neighborNodeIds.add(link.source.id);
+                }
+            });
+            return Array.from(neighborNodeIds).some(id => !newNodes.some(n => n.id === id));
+        }
+
+        // 更新图形函数
+        function updateGraph(newNodes, newLinks) {
+            simulation.nodes(newNodes);
+            simulation.force("link").links(newLinks);
+
+            link = link.data(newLinks);
+            link.exit().remove();
+            link = link.enter().append("line").attr("class", "edge").merge(link);
+
+            node = node.data(newNodes);
+            node.exit().remove();
+
+            const nodeEnter = node.enter().append("g")
+                .attr("class", "node")
+                .call(d3.drag()
+                    .on("start", dragstarted)
+                    .on("drag", dragged)
+                    .on("end", dragended));
+
+            nodeEnter.append("circle")
+                .attr("r", 10)
+                .attr("fill", d => d.color);
+
+            nodeEnter.append("text")
+                .attr("dy", ".35em")
+                .text(d => d.name);
+
+            nodeEnter.on("mouseover", mouseovered)
+                .on("mouseout", mouseouted)
+                .on("click", nodeClicked);
+
+            node = nodeEnter.merge(node);
+
+            // 更新所有节点的文本
+            node.select("text")
+                .text(d => d.name);
+
+            // 设置选中节点和有未展示邻居节点的样式
+            node.select("circle")
+                .attr("r", d => {
+                    if (d.id === selectedNodeId) {
+                        return 12.5;
+                    } else if (hasMissingNeighbors(d, newNodes)) {
+                        return 10 * 1.2;
+                    } else {
+                        return 10;
+                    }
+                })
+                .attr("class", d => {
+                    if (d.id === selectedNodeId) {
+                        return "selected-node";
+                    } else if (hasMissingNeighbors(d, newNodes)) {
+                        return "neighbor-missing-node";
+                    } else {
+                        return "";
+                    }
+                })
+                .attr("fill", d => {
+                    if (d.id === selectedNodeId) {
+                        return "gold";
+                    } else if (hasMissingNeighbors(d, newNodes)) {
+                        return "green";
+                    } else {
+                        return d.color;
+                    }
+                });
+
+            simulation.alpha(1).restart();
+        }
+
+        // 力导向仿真事件
+        simulation.on("tick", () => {
+            link.attr("x1", d => d.source.x)
+                .attr("y1", d => d.source.y)
+                .attr("x2", d => d.target.x)
+                .attr("y2", d => d.target.y);
+
+            node.attr("transform", d => `translate(${d.x},${d.y})`);
+        });
+
+        // 画布拖拽行为函数
+        function dragstarted(event, d) {
+            if (!event.active) simulation.alphaTarget(0.3).restart();
+            d.fx = d.x;
+            d.fy = d.y;
+        }
+
+        function dragged(event, d) {
+            d.fx = event.x;
+            d.fy = event.y;
+        }
+
+        function dragended(event, d) {
+            if (!event.active) simulation.alphaTarget(0);
+            d.fx = null;
+            d.fy = null;
+        }
+
+        // 重置视图
+        d3.select("#reset").on("click", () => {
+            location.reload(); // 重新加载页面
+        });
+
+        // 隐藏右边栏
+        d3.select("#toggleSidebar").on("click", () => {
+            d3.select("#sidebar").classed("show", !d3.select("#sidebar").classed("show"));
+            d3.select("#toggleSidebar").text(d3.select("#sidebar").classed("show") ? "隐藏信息" : "显示信息");
+        });
+
+        // 初始化缩放行为
+        const zoom = d3.zoom().on("zoom", zoomed);
+
+        // 拖拽和缩放的行为
+        function zoomed(event) {
+            svg.attr("transform", event.transform);
+        }
+
+        // 应用缩放行为到整个SVG
+        d3.select("svg").call(zoom);
+
+        // 确保SVG大小足够大以容纳所有节点
+        function resize() {
+            const bounds = d3.select("svg").node().getBoundingClientRect();
+            const maxX = d3.max(nodes, d => d.x) + 20;
+            const maxY = d3.max(nodes, d => d.y) + 20;
+            const newWidth = Math.max(bounds.width, maxX);
+            const newHeight = Math.max(bounds.height, maxY);
+            d3.select("svg").attr("width", newWidth).attr("height", newHeight);
+        }
+
+        // 调用resize函数
+        resize();
+    </script>
+</body>
+</html>
