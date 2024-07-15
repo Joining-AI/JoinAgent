@@ -97,6 +97,17 @@ class JSProcessor:
         except Exception as e:
             print(f"解析失败，错误信息：{e}。原文字串为{str_with_dict}")
             return None
+
+    def parse_python(self,markdown_text):
+        """
+        提取被 ```python ``` 包裹的 Python 代码。
+        
+        :param markdown_text: 包含 Python 代码的 Markdown 文本
+        :return: 提取的 Python 代码
+        """
+        pattern = r'```python(.*?)```'
+        matches = re.findall(pattern, markdown_text, re.DOTALL)
+        return "\n".join(match.strip() for match in matches)
     
     def read_json(self, file_path):
         # 打开文件并读取内容
