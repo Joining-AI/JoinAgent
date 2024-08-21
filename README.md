@@ -1,5 +1,16 @@
 # Joining-Agents
 
-注意到.env文件中有各个填入API的位置，我们的实践表明，在仓库中开放的各个功能中，QWEN_API是最值得使用的
+# Changelog
 
-如果使用到向量化比对，那么请将text2vec-base-chinese模型的本机路径填入model_path
+## [Unreleased]
+
+### Changed
+- 更新检查点重载模式
+- 添加 LLM 解析 PDF 功能
+- 改进 备用LLM 机制
+- 优化空白模板处理
+- 统一模型调用类方式
+
+## [1.0.0] - 2024-08-21
+
+注意到.env文件中有各个填入API的位置，我们推荐使用https://api.openai-next.com/作为MULTI_LLM的api
